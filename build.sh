@@ -19,13 +19,14 @@ pip install --upgrade pip
 echo "📦 Installing dependencies..."
 pip install -r requirements.txt
 
-# 5. Install Lighthouse CLI globally
+# 5. Install Lighthouse CLI (skip if no permissions, it's optional)
 echo "💡 Installing Lighthouse CLI..."
-npm install -g lighthouse
+npm install -g lighthouse 2>/dev/null || echo "⚠️  Lighthouse install skipped (no permissions - scans will work without it)"
 
 # 6. Install Playwright + browser binaries
 # Moved to start.sh to use persistent disk
 echo "⏩ Skipping Playwright install in build (will run in start.sh)..."
+
 
 
 
