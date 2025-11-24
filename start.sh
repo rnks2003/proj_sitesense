@@ -90,28 +90,36 @@ if ! curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
     
     ZAP_DIR="./zap"
     if [ -f "$ZAP_DIR/zap.sh" ]; then
-        # Start ZAP in daemon mode in the background
-        nohup "$ZAP_DIR/zap.sh" -daemon -host 0.0.0.0 -port 8080 \
-            -config api.addrs.addr.name=.* \
-            -config api.addrs.addr.regex=true \
-            -config api.key= \
-            -config api.disablekey=true > zap.log 2>&1 &
-        
-        # Wait for ZAP to start
-        echo "   Waiting for ZAP to initialize..."
-        ZAP_STARTED=false
-        for i in {1..60}; do
-            if curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
-                echo "✅ ZAP started successfully!"
-                ZAP_STARTED=true
-                break
+        # Check if Java is available (required for ZAP)
+        if ! command -v java &> /dev/null; then
+            echo "⚠️  Java not found. ZAP requires Java to run."
+            echo "   Security scans will be unavailable."
+        else
+            echo "   Java found: $(java -version 2>&1 | head -n 1)"
+            
+            # Start ZAP in daemon mode in the background
+            nohup "$ZAP_DIR/zap.sh" -daemon -host 0.0.0.0 -port 8080 \
+                -config api.addrs.addr.name=.* \
+                -config api.addrs.addr.regex=true \
+                -config api.key= \
+                -config api.disablekey=true > zap.log 2>&1 &
+            
+            # Wait for ZAP to start (reduced timeout for faster deployment)
+            echo "   Waiting for ZAP to initialize (max 30 seconds)..."
+            ZAP_STARTED=false
+            for i in {1..15}; do
+                if curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
+                    echo "✅ ZAP started successfully!"
+                    ZAP_STARTED=true
+                    break
+                fi
+                sleep 2
+            done
+            
+            if [ "$ZAP_STARTED" = false ]; then
+                echo "⚠️  ZAP failed to initialize within timeout. Security scans may not work."
+                echo "   The application will continue without ZAP. Check zap.log for details."
             fi
-            sleep 2
-        done
-        
-        if [ "$ZAP_STARTED" = false ]; then
-            echo "⚠️  ZAP failed to initialize within timeout. Security scans may not work."
-            echo "   Check zap.log for details."
         fi
     else
         echo "⚠️  ZAP not found at $ZAP_DIR. Security scans will be unavailable."
