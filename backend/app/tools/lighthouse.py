@@ -12,15 +12,23 @@ class PerformanceResult:
     full_report: Dict[str, Any]
 
 def run_lighthouse(url: str, scan_id: str) -> PerformanceResult:
-    output_dir = "data/lighthouse"
+    # Use absolute path for data directory
+    base_dir = os.path.abspath(os.path.join(os.getcwd(), "data"))
+    output_dir = os.path.join(base_dir, "lighthouse")
     os.makedirs(output_dir, exist_ok=True)
-    output_path = f"{output_dir}/{scan_id}.json"
+    output_path = os.path.join(output_dir, f"{scan_id}.json")
     
     # Set CHROME_PATH for lighthouse to find the browser
     env = os.environ.copy()
     from ..config import settings
     env["CHROME_PATH"] = settings.CHROME_PATH
     
+    # Check if lighthouse is installed
+    import shutil
+    if not shutil.which("lighthouse"):
+        print("Lighthouse CLI not found in PATH")
+        raise FileNotFoundError("Lighthouse CLI not found. Please install it with 'npm install -g lighthouse'")
+
     cmd = [
         "lighthouse",
         url,

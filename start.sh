@@ -24,7 +24,11 @@ fi
 
 # Install Playwright browsers (using persistent disk if available)
 echo "🎭 Checking Playwright browsers..."
-export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/render/project/src/data/playwright-browsers}"
+if [ -d "/opt/render/project/src/data" ] && [ -w "/opt/render/project/src/data" ]; then
+    export PLAYWRIGHT_BROWSERS_PATH="/opt/render/project/src/data/playwright-browsers"
+else
+    export PLAYWRIGHT_BROWSERS_PATH="./data/playwright-browsers"
+fi
 echo "   Browsers path: $PLAYWRIGHT_BROWSERS_PATH"
 
 # Create directory if it doesn't exist
