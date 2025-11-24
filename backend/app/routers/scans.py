@@ -21,7 +21,7 @@ def run_scan_sync(scan_id: str, url: str):
     """Wrapper to run async scan in background task"""
     asyncio.run(scan_service.run_full_scan(scan_id, url))
 
-@router.post("/", response_model=schemas.ScanStatus)
+@router.post("/", response_model=schemas.ScanRead)
 def create_scan(scan: schemas.ScanCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     db_scan = models.Scan(url=scan.url, status="queued")
     db.add(db_scan)
@@ -30,7 +30,8 @@ def create_scan(scan: schemas.ScanCreate, background_tasks: BackgroundTasks, db:
     
     background_tasks.add_task(run_scan_sync, db_scan.id, db_scan.url)
     
-    return {"id": db_scan.id, "status": db_scan.status}
+    return db_scan
+
 
 @router.get("/{scan_id}", response_model=schemas.ScanRead)
 def read_scan(scan_id: str, db: Session = Depends(get_db)):
