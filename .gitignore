@@ -5,3 +5,5 @@ __pycache__/
 backend/sitesense.db
 *.db
 .env
+frontend/config.js
+

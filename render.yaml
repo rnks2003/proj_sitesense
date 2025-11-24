@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sitesense
+    env: python
+    buildCommand: ./build.sh
+    startCommand: ./start.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: API_BASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+    disk:
+      name: sitesense-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

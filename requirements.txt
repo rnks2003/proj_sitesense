@@ -13,4 +13,6 @@ numpy
 langgraph
 langchain-core
 alembic==1.13.1
+google-generativeai
+
 
