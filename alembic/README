@@ -1,0 +1,48 @@
+SiteSense Database Migrations
+==============================
+
+This directory contains Alembic database migrations for the SiteSense application.
+
+## Common Commands
+
+### Check current migration version
+```bash
+alembic current
+```
+
+### View migration history
+```bash
+alembic history
+```
+
+### Create a new migration (auto-generate from model changes)
+```bash
+alembic revision --autogenerate -m "Description of changes"
+```
+
+### Apply all pending migrations
+```bash
+alembic upgrade head
+```
+
+### Rollback one migration
+```bash
+alembic downgrade -1
+```
+
+### Rollback to a specific version
+```bash
+alembic downgrade <revision_id>
+```
+
+## Configuration
+
+- Database URL is automatically loaded from `backend/app/config.py`
+- Models are imported from `backend/app/models.py`
+- Migration scripts are stored in `alembic/versions/`
+
+## Notes
+
+- Always review auto-generated migrations before applying them
+- Test migrations on a backup database before applying to production
+- Both upgrade() and downgrade() functions should be implemented for each migration

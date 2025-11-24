@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiteSense - Website Analysis Platform</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Mobile Warning -->
+        <div class="mobile-warning" id="mobileWarning">
+            <div class="mobile-warning-content">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+                <h2>Desktop Mode Required</h2>
+                <p>This application is optimized for desktop viewing. Please switch to desktop mode or use a larger
+                    screen for the best experience.</p>
+            </div>
+        </div>
+
+        <!-- Mobile Toggle Button (outside sidebar) -->
+        <button class="sidebar-toggle sidebar-toggle-mobile" id="sidebarToggleMobile">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-header-top">
+                    <h1 class="app-title">SiteSense</h1>
+                    <button class="sidebar-toggle" id="sidebarToggle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+                <button class="new-scan-btn" id="newScanBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Scan
+                </button>
+                <button class="clear-history-btn" id="clearHistoryBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Clear History
+                </button>
+            </div>
+
+            <div class="scan-history" id="scanHistory">
+                <div class="loading-history">Loading history...</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <div class="input-section" id="inputSection">
+                <div class="input-container">
+                    <h2>Analyze a Website</h2>
+                    <p class="subtitle">Enter a URL to get comprehensive analysis</p>
+
+                    <div class="input-group">
+                        <input type="url" id="urlInput" placeholder="https://example.com" class="url-input">
+                        <button id="analyzeBtn" class="analyze-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            Analyze
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Section -->
+            <div class="status-section hidden" id="statusSection">
+                <div class="status-card">
+                    <div class="spinner"></div>
+                    <p id="statusText">Starting analysis...</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section hidden" id="resultsSection">
+                <!-- Scanned URL Display -->
+                <div class="scanned-url-container">
+                    <span class="url-label">TARGET:</span>
+                    <a href="#" target="_blank" id="scannedUrl" class="scanned-url-link">--</a>
+                </div>
+
+                <!-- Dashboard Header -->
+                <div class="dashboard-header">
+                    <div class="overall-score-card">
+                        <div class="score-circle-small">
+                            <svg class="score-ring-small" width="120" height="120">
+                                <circle class="score-ring-bg-small" cx="60" cy="60" r="54"></circle>
+                                <circle class="score-ring-fill-small" id="scoreRing" cx="60" cy="60" r="54"></circle>
+                            </svg>
+                            <div class="score-value-small" id="overallScore">--</div>
+                        </div>
+                        <div class="score-label">Overall Health</div>
+                    </div>
+
+                    <div class="modules-grid-compact">
+                        <div class="module-card-compact">
+                            <div class="module-icon-svg">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </div>
+                            <div class="module-info">
+                                <h3>Security</h3>
+                                <div class="module-score-compact" id="securityScore">--</div>
+                            </div>
+                        </div>
+                        <div class="module-card-compact">
+                            <div class="module-icon-svg">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg>
+                            </div>
+                            <div class="module-info">
+                                <h3>SEO</h3>
+                                <div class="module-score-compact" id="seoScore">--</div>
+                            </div>
+                        </div>
+                        <div class="module-card-compact">
+                            <div class="module-icon-svg">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                </svg>
+                            </div>
+                            <div class="module-info">
+                                <h3>Performance</h3>
+                                <div class="module-score-compact" id="performanceScore">--</div>
+                            </div>
+                        </div>
+                        <div class="module-card-compact">
+                            <div class="module-icon-svg">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 8v4"></path>
+                                    <path d="M12 16h.01"></path>
+                                </svg>
+                            </div>
+                            <div class="module-info">
+                                <h3>Accessibility</h3>
+                                <div class="module-score-compact" id="accessibilityScore">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="recommendations-card">
+                    <h2>Recommendations</h2>
+                    <ul id="recommendationsList" class="recommendations-list">
+                        <li>No recommendations available</li>
+                    </ul>
+                </div>
+
+                <!-- Heatmaps -->
+                <div class="heatmaps-card">
+                    <h2>Predictive Heatmaps</h2>
+                    <div class="heatmaps-grid">
+                        <div class="heatmap-item">
+                            <h3>Attention Heatmap</h3>
+                            <img id="attentionHeatmap" alt="Attention Heatmap" class="heatmap-img">
+                        </div>
+                        <div class="heatmap-item">
+                            <h3>Click Likelihood Heatmap</h3>
+                            <img id="clickHeatmap" alt="Click Heatmap" class="heatmap-img">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState">
+                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <h2>No Scan Selected</h2>
+                <p>Select a scan from the history or create a new one</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

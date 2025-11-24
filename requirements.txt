@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+python-dotenv
+httpx
+playwright
+requests
+pydantic-settings
+beautifulsoup4
+opencv-python-headless
+numpy
+langgraph
+langchain-core
+alembic==1.13.1
+
