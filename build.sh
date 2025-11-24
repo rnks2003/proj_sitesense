@@ -15,7 +15,19 @@ source venv/bin/activate
 echo "⬆️ Upgrading pip..."
 pip install --upgrade pip
 
-# 4. Install Python dependencies
+# 4. Install Java (required for ZAP)
+echo "☕ Checking Java..."
+if ! command -v java &> /dev/null; then
+    echo "   Installing Java..."
+    # On Render/Debian-based systems
+    apt-get update -qq && apt-get install -y -qq default-jre-headless > /dev/null 2>&1 || \
+    # Fallback for other systems
+    echo "   ⚠️  Could not install Java automatically. ZAP will not work."
+else
+    echo "   ✅ Java already installed"
+fi
+
+# 5. Install Python dependencies
 echo "📦 Installing dependencies..."
 pip install -r requirements.txt
 

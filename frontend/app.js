@@ -78,7 +78,14 @@ async function deleteScan(scanId) {
     }
 
     try {
-        // Delete from local DB
+        // Delete from backend
+        const response = await fetch(`${API_BASE}/scan/${scanId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Failed to delete scan from server');
+
+        // Delete from IndexedDB
         await deleteScanFromDB(scanId);
 
         // Remove from local scans array
