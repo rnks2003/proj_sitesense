@@ -5,6 +5,9 @@
 echo "🚀 Starting SiteSense Application..."
 echo ""
 
+# Add local node_modules bin to PATH
+export PATH="$PATH:$(pwd)/node_modules/.bin"
+
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo "❌ Virtual environment not found!"
@@ -37,6 +40,13 @@ mkdir -p "$PLAYWRIGHT_BROWSERS_PATH"
 # Install chromium
 python -m playwright install chromium
 
+# Check for Lighthouse
+if ! command -v lighthouse &> /dev/null; then
+    echo "⚠️  Lighthouse CLI not found. Attempting to install..."
+    npm install lighthouse || echo "❌ Failed to install Lighthouse. Performance scans may fail."
+else
+    echo "✅ Lighthouse CLI found."
+fi
 
 # Generate frontend config
 echo "⚙️ Generating frontend configuration..."
