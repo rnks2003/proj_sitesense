@@ -60,19 +60,207 @@ function setupEventListeners() {
     });
 }
 
-// Load scan history from API
+// Load scan history from IndexedDB
 async function loadScanHistory() {
     try {
-        const response = await fetch(`${API_BASE}/scan/`);
-        if (!response.ok) throw new Error('Failed to load scans');
-
-        scans = await response.json();
+        scans = await getScans();
         renderScanHistory();
     } catch (error) {
         console.error('Error loading scan history:', error);
         scanHistory.innerHTML = '<div class="loading-history">Failed to load history</div>';
     }
 }
+
+// ... renderScanHistory remains same ...
+
+// Delete a single scan
+async function deleteScan(scanId) {
+    if (!confirm('Are you sure you want to delete this scan?')) {
+        return;
+    }
+
+    try {
+        // Delete from local DB
+        await deleteScanFromDB(scanId);
+
+        // Remove from local scans array
+        scans = scans.filter(s => s.id !== scanId);
+
+        // If deleted scan was active, show new scan input
+        if (currentScanId === scanId) {
+            currentScanId = null;
+            showNewScanInput();
+        }
+
+        // Re-render history
+        renderScanHistory();
+    } catch (error) {
+        console.error('Error deleting scan:', error);
+        alert('Failed to delete scan. Please try again.');
+    }
+}
+
+// ... formatUrl, formatDate remain same ...
+
+// Clear scan history
+async function clearHistory() {
+    if (!confirm('Are you sure you want to clear all scan history? This cannot be undone.')) {
+        return;
+    }
+
+    try {
+        await clearScansFromDB();
+        scans = [];
+        currentScanId = null;
+        renderScanHistory();
+        showNewScanInput();
+    } catch (error) {
+        console.error('Error clearing history:', error);
+        alert('Failed to clear history. Please try again.');
+    }
+}
+
+// ... showNewScanInput, createNewScan remain same ...
+
+// Poll scan status
+async function pollScanStatus(scanId) {
+    let attempts = 0;
+    const maxAttempts = 120;
+
+    const poll = async () => {
+        if (attempts >= maxAttempts) {
+            statusText.textContent = 'Scan timed out';
+            setTimeout(() => loadScan(scanId), 2000);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/scan/${scanId}`);
+            if (!response.ok) throw new Error('Failed to fetch scan status');
+
+            const scanData = await response.json();
+            statusText.textContent = `Status: ${scanData.status}...`;
+
+            if (scanData.status === 'completed') {
+                // Save to IndexedDB
+                await saveScan(scanData);
+
+                await loadScanHistory(); // Refresh history
+                displayResults(scanData);
+            } else if (scanData.status === 'failed') {
+                statusText.textContent = `Scan failed: ${scanData.error_message || 'Unknown error'}`;
+                setTimeout(() => loadScan(scanId), 3000);
+            } else {
+                attempts++;
+                setTimeout(poll, 1000);
+            }
+        } catch (error) {
+            console.error('Error polling scan:', error);
+            statusText.textContent = `Error: ${error.message}`;
+        }
+    };
+
+    poll();
+}
+
+// Load existing scan (from DB first, then API if needed)
+async function loadScan(scanId) {
+    currentScanId = scanId;
+
+    // Update active state in sidebar
+    document.querySelectorAll('.scan-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.scanId === scanId);
+    });
+
+    // Show loading
+    inputSection.classList.add('hidden');
+    statusSection.classList.remove('hidden');
+    resultsSection.classList.add('hidden');
+    emptyState.classList.add('hidden');
+    statusText.textContent = 'Loading scan...';
+
+    try {
+        // Try loading from IndexedDB first
+        let scanData = await getScan(scanId);
+
+        if (!scanData) {
+            // Fallback to API if not in DB (e.g. shared link or fresh load)
+            const response = await fetch(`${API_BASE}/scan/${scanId}`);
+            if (!response.ok) throw new Error('Failed to load scan');
+            scanData = await response.json();
+
+            // If completed, save to DB for next time
+            if (scanData.status === 'completed') {
+                await saveScan(scanData);
+            }
+        }
+
+        if (scanData.status === 'completed') {
+            displayResults(scanData);
+        } else if (scanData.status === 'queued') {
+            statusText.textContent = 'Scan is queued...';
+            pollScanStatus(scanId);
+        } else if (scanData.status === 'failed') {
+            statusText.textContent = `Scan failed: ${scanData.error_message || 'Unknown error'}`;
+        }
+    } catch (error) {
+        console.error('Error loading scan:', error);
+        statusText.textContent = `Error: ${error.message}`;
+    }
+}
+
+// ... displayResults remains same ...
+
+// Chat Logic
+async function sendChatMessage() {
+    const userMsg = chatInput.value.trim();
+    if (!userMsg) return;
+
+    displayChatMessage(userMsg, 'user');
+    chatHistory.push({ user: userMsg });
+    chatInput.value = '';
+    showTypingIndicator();
+
+    try {
+        const apiKey = await getStoredApiKey();
+
+        // Get current scan context from DB
+        const scanData = await getScan(currentScanId);
+
+        // Construct context object
+        let scanContext = {};
+        if (scanData) {
+            scanContext = {
+                url: scanData.url,
+                module_results: scanData.module_results
+            };
+        }
+
+        const response = await fetch(`${API_BASE}/chat/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: userMsg,
+                history: chatHistory,
+                api_key: apiKey,
+                scan_context: scanContext
+            })
+        });
+
+        hideTypingIndicator();
+        if (!response.ok) throw new Error('Chat request failed');
+
+        const data = await response.json();
+        const aiMsg = data.response;
+        displayChatMessage(aiMsg, 'assistant');
+        chatHistory.push({ assistant: aiMsg });
+    } catch (err) {
+        hideTypingIndicator();
+        console.error('Chat error:', err);
+        displayChatMessage('Error: unable to get response.', 'assistant');
+    }
+}
+
 
 // Render scan history in sidebar
 function renderScanHistory() {
@@ -115,6 +303,121 @@ function renderScanHistory() {
             const scanId = btn.dataset.scanId;
             await deleteScan(scanId);
         });
+    });
+}
+
+// ---------- IndexedDB Storage ----------
+
+const DB_NAME = 'siteSenseDB';
+const DB_VERSION = 2; // Increment for new stores
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('keys')) {
+                db.createObjectStore('keys');
+            }
+            if (!db.objectStoreNames.contains('scans')) {
+                const scanStore = db.createObjectStore('scans', { keyPath: 'id' });
+                scanStore.createIndex('created_at', 'created_at', { unique: false });
+            }
+        };
+
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+// API Key Helpers
+async function getStoredApiKey() {
+    const db = await openDB();
+    return new Promise((resolve) => {
+        const tx = db.transaction('keys', 'readonly');
+        const store = tx.objectStore('keys');
+        const getReq = store.get('gemini');
+        getReq.onsuccess = () => resolve(getReq.result || null);
+        getReq.onerror = () => resolve(null);
+    });
+}
+
+async function storeApiKey(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('keys', 'readwrite');
+        const store = tx.objectStore('keys');
+        const putReq = store.put(key, 'gemini');
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = (e) => reject(e.target.error);
+    });
+}
+
+// Scan Storage Helpers
+async function saveScan(scanData) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('scans', 'readwrite');
+        const store = tx.objectStore('scans');
+        const putReq = store.put(scanData);
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function getScans() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('scans', 'readonly');
+        const store = tx.objectStore('scans');
+        const index = store.index('created_at');
+        const request = index.openCursor(null, 'prev'); // Newest first
+        const results = [];
+
+        request.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+                results.push(cursor.value);
+                cursor.continue();
+            } else {
+                resolve(results);
+            }
+        };
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function getScan(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('scans', 'readonly');
+        const store = tx.objectStore('scans');
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function deleteScanFromDB(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('scans', 'readwrite');
+        const store = tx.objectStore('scans');
+        const request = store.delete(id);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function clearScansFromDB() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('scans', 'readwrite');
+        const store = tx.objectStore('scans');
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
     });
 }
 

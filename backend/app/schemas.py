@@ -49,3 +49,15 @@ class ScanRead(ScanBase):
 class ScanStatus(BaseModel):
     id: str
     status: str
+    error_message: Optional[str] = None
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
+    api_key: str
+    scan_context: Optional[Dict[str, Any]] = None
+
+class ChatResponse(BaseModel):
+    response: str
+
+    status: str
