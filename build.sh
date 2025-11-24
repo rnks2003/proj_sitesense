@@ -21,6 +21,8 @@ pip install -r requirements.txt
 
 # 5. Install Playwright + browser binaries
 echo "🎭 Installing Playwright browsers..."
-python -m playwright install --with-deps
+export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/playwright-browsers
+python -m playwright install chromium --with-deps
+
 
 echo "🎉 Build completed successfully!"
