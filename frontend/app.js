@@ -71,8 +71,6 @@ async function loadScanHistory() {
     }
 }
 
-// ... renderScanHistory remains same ...
-
 // Delete a single scan
 async function deleteScan(scanId) {
     if (!confirm('Are you sure you want to delete this scan?')) {
@@ -100,8 +98,6 @@ async function deleteScan(scanId) {
     }
 }
 
-// ... formatUrl, formatDate remain same ...
-
 // Clear scan history
 async function clearHistory() {
     if (!confirm('Are you sure you want to clear all scan history? This cannot be undone.')) {
@@ -119,8 +115,6 @@ async function clearHistory() {
         alert('Failed to clear history. Please try again.');
     }
 }
-
-// ... showNewScanInput, createNewScan remain same ...
 
 // Poll scan status
 async function pollScanStatus(scanId) {
@@ -208,8 +202,6 @@ async function loadScan(scanId) {
         statusText.textContent = `Error: ${error.message}`;
     }
 }
-
-// ... displayResults remains same ...
 
 // Chat Logic
 async function sendChatMessage() {
