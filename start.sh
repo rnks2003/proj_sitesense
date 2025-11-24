@@ -31,7 +31,6 @@ else
 fi
 check_dependency "node"
 check_dependency "npm"
-check_dependency "docker"
 
 echo ""
 
@@ -87,33 +86,21 @@ fi
 # Start ZAP if not running
 echo "🛡️  Checking ZAP Security Scanner..."
 if ! curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
-    echo "   ZAP is not running. Starting Docker container..."
-    if command -v docker &> /dev/null; then
-        # Check if container exists but stopped
-        if docker ps -a --format '{{.Names}}' | grep -q "^zap-sitesense$"; then
-            echo "   Restarting existing ZAP container..."
-            if ! docker start zap-sitesense; then
-                echo "❌ Failed to start ZAP container."
-                exit 1
-            fi
-        else
-            echo "   Starting new ZAP container..."
-            if ! docker run -d --name zap-sitesense \
-                -p 8080:8080 \
-                -i zaproxy/zap-stable zap.sh -daemon -host 0.0.0.0 -port 8080 \
-                -config api.addrs.addr.name=.* \
-                -config api.addrs.addr.regex=true \
-                -config api.key= \
-                -config api.disablekey=true; then
-                echo "❌ Failed to create/start ZAP container."
-                exit 1
-            fi
-        fi
+    echo "   ZAP is not running. Starting ZAP daemon..."
+    
+    ZAP_DIR="./zap"
+    if [ -f "$ZAP_DIR/zap.sh" ]; then
+        # Start ZAP in daemon mode in the background
+        nohup "$ZAP_DIR/zap.sh" -daemon -host 0.0.0.0 -port 8080 \
+            -config api.addrs.addr.name=.* \
+            -config api.addrs.addr.regex=true \
+            -config api.key= \
+            -config api.disablekey=true > zap.log 2>&1 &
         
         # Wait for ZAP to start
         echo "   Waiting for ZAP to initialize..."
         ZAP_STARTED=false
-        for i in {1..30}; do
+        for i in {1..60}; do
             if curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
                 echo "✅ ZAP started successfully!"
                 ZAP_STARTED=true
@@ -123,12 +110,12 @@ if ! curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
         done
         
         if [ "$ZAP_STARTED" = false ]; then
-            echo "❌ ZAP failed to initialize within timeout."
-            exit 1
+            echo "⚠️  ZAP failed to initialize within timeout. Security scans may not work."
+            echo "   Check zap.log for details."
         fi
     else
-        echo "❌ Docker not found. Cannot start ZAP."
-        exit 1
+        echo "⚠️  ZAP not found at $ZAP_DIR. Security scans will be unavailable."
+        echo "   Run ./build.sh to install ZAP."
     fi
 else
     echo "✅ ZAP is already running."

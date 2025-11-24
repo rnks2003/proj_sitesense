@@ -9,3 +9,5 @@ frontend/config.js
 
 node_modules
 data/
+zap/
+zap.log
