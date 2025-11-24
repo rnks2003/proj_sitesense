@@ -12,8 +12,9 @@ class PerformanceResult:
     full_report: Dict[str, Any]
 
 def run_lighthouse(url: str, scan_id: str) -> PerformanceResult:
-    # Use absolute path for data directory
-    base_dir = os.path.abspath(os.path.join(os.getcwd(), "data"))
+    # Use absolute path for data directory (go up from backend to project root)
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+    base_dir = os.path.join(project_root, "data")
     output_dir = os.path.join(base_dir, "lighthouse")
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"{scan_id}.json")
