@@ -22,6 +22,18 @@ if ! python -c "import fastapi" 2>/dev/null; then
     pip install -r requirements.txt
 fi
 
+# Install Playwright browsers (using persistent disk if available)
+echo "🎭 Checking Playwright browsers..."
+export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/render/project/src/data/playwright-browsers}"
+echo "   Browsers path: $PLAYWRIGHT_BROWSERS_PATH"
+
+# Create directory if it doesn't exist
+mkdir -p "$PLAYWRIGHT_BROWSERS_PATH"
+
+# Install chromium
+python -m playwright install chromium
+
+
 # Generate frontend config
 echo "⚙️ Generating frontend configuration..."
 # Default to empty string to use relative paths (same origin) if not specified

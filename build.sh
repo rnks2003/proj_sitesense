@@ -20,9 +20,9 @@ echo "📦 Installing dependencies..."
 pip install -r requirements.txt
 
 # 5. Install Playwright + browser binaries
-echo "🎭 Installing Playwright browsers..."
-export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/playwright-browsers
-python -m playwright install chromium --with-deps
+# Moved to start.sh to use persistent disk
+echo "⏩ Skipping Playwright install in build (will run in start.sh)..."
+
 
 
 echo "🎉 Build completed successfully!"

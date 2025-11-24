@@ -12,7 +12,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/project/src/playwright-browsers
+        value: /opt/render/project/src/data/playwright-browsers
     disk:
       name: sitesense-data
       mountPath: /opt/render/project/src/data
