@@ -8,6 +8,33 @@ echo ""
 # Add local node_modules bin to PATH
 export PATH="$PATH:$(pwd)/node_modules/.bin"
 
+# Function to check critical dependencies
+check_dependency() {
+    if ! command -v "$1" &> /dev/null; then
+        echo "❌ Critical dependency missing: $1"
+        echo "   Deployment cannot proceed without this dependency."
+        exit 1
+    else
+        echo "✅ Dependency found: $1"
+    fi
+}
+
+echo "🔍 Checking system dependencies..."
+check_dependency "python3"
+# Check for pip or pip3
+if command -v pip3 &> /dev/null; then
+    echo "✅ Dependency found: pip3"
+elif command -v pip &> /dev/null; then
+    echo "✅ Dependency found: pip"
+else
+    echo "⚠️  pip not found globally. Will check inside venv."
+fi
+check_dependency "node"
+check_dependency "npm"
+check_dependency "docker"
+
+echo ""
+
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo "❌ Virtual environment not found!"
@@ -22,7 +49,10 @@ source venv/bin/activate
 # Check if dependencies are installed
 if ! python -c "import fastapi" 2>/dev/null; then
     echo "📥 Installing dependencies..."
-    pip install -r requirements.txt
+    if ! pip install -r requirements.txt; then
+        echo "❌ Failed to install Python dependencies."
+        exit 1
+    fi
 fi
 
 # Install Playwright browsers (using persistent disk if available)
@@ -38,14 +68,70 @@ echo "   Browsers path: $PLAYWRIGHT_BROWSERS_PATH"
 mkdir -p "$PLAYWRIGHT_BROWSERS_PATH"
 
 # Install chromium
-python -m playwright install chromium
+if ! python -m playwright install chromium; then
+    echo "❌ Failed to install Playwright browsers."
+    exit 1
+fi
 
 # Check for Lighthouse
 if ! command -v lighthouse &> /dev/null; then
     echo "⚠️  Lighthouse CLI not found. Attempting to install..."
-    npm install lighthouse || echo "❌ Failed to install Lighthouse. Performance scans may fail."
+    if ! npm install lighthouse; then
+        echo "❌ Failed to install Lighthouse."
+        exit 1
+    fi
 else
     echo "✅ Lighthouse CLI found."
+fi
+
+# Start ZAP if not running
+echo "🛡️  Checking ZAP Security Scanner..."
+if ! curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
+    echo "   ZAP is not running. Starting Docker container..."
+    if command -v docker &> /dev/null; then
+        # Check if container exists but stopped
+        if docker ps -a --format '{{.Names}}' | grep -q "^zap-sitesense$"; then
+            echo "   Restarting existing ZAP container..."
+            if ! docker start zap-sitesense; then
+                echo "❌ Failed to start ZAP container."
+                exit 1
+            fi
+        else
+            echo "   Starting new ZAP container..."
+            if ! docker run -d --name zap-sitesense \
+                -p 8080:8080 \
+                -i zaproxy/zap-stable zap.sh -daemon -host 0.0.0.0 -port 8080 \
+                -config api.addrs.addr.name=.* \
+                -config api.addrs.addr.regex=true \
+                -config api.key= \
+                -config api.disablekey=true; then
+                echo "❌ Failed to create/start ZAP container."
+                exit 1
+            fi
+        fi
+        
+        # Wait for ZAP to start
+        echo "   Waiting for ZAP to initialize..."
+        ZAP_STARTED=false
+        for i in {1..30}; do
+            if curl -s http://localhost:8080/JSON/core/view/version/ > /dev/null; then
+                echo "✅ ZAP started successfully!"
+                ZAP_STARTED=true
+                break
+            fi
+            sleep 2
+        done
+        
+        if [ "$ZAP_STARTED" = false ]; then
+            echo "❌ ZAP failed to initialize within timeout."
+            exit 1
+        fi
+    else
+        echo "❌ Docker not found. Cannot start ZAP."
+        exit 1
+    fi
+else
+    echo "✅ ZAP is already running."
 fi
 
 # Generate frontend config
