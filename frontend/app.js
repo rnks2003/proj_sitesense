@@ -136,12 +136,19 @@ async function pollScanStatus(scanId) {
             statusText.textContent = `Status: ${scanData.status}...`;
 
             if (scanData.status === 'completed') {
-                // Save to IndexedDB
+                // Save completed scan to IndexedDB
                 await saveScan(scanData);
 
-                await loadScanHistory(); // Refresh history
+                // Refresh sidebar to show updated status
+                await loadScanHistory();
+
+                // Display results
                 displayResults(scanData);
             } else if (scanData.status === 'failed') {
+                // Save failed scan to IndexedDB
+                await saveScan(scanData);
+                await loadScanHistory();
+
                 statusText.textContent = `Scan failed: ${scanData.error_message || 'Unknown error'}`;
                 setTimeout(() => loadScan(scanId), 3000);
             } else {
