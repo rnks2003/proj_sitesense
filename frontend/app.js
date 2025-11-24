@@ -548,14 +548,17 @@ async function createNewScan() {
 
         if (!response.ok) throw new Error('Failed to create scan');
 
-        const { id: scanId } = await response.json();
-        currentScanId = scanId;
+        const scanData = await response.json();
+        currentScanId = scanData.id;
+
+        // Save initial "queued" scan to IndexedDB so it appears in history
+        await saveScan(scanData);
 
         // Reload history to show new scan
         await loadScanHistory();
 
         // Poll for results
-        pollScanStatus(scanId);
+        pollScanStatus(currentScanId);
 
     } catch (error) {
         console.error('Error creating scan:', error);
