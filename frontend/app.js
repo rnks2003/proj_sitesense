@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://proj-sitesense.onrender.com';
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
