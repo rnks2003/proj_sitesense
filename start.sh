@@ -30,7 +30,7 @@ echo "🎭 Checking Playwright browsers..."
 if [ -d "/opt/render/project/src/data" ] && [ -w "/opt/render/project/src/data" ]; then
     export PLAYWRIGHT_BROWSERS_PATH="/opt/render/project/src/data/playwright-browsers"
 else
-    export PLAYWRIGHT_BROWSERS_PATH="./data/playwright-browsers"
+    export PLAYWRIGHT_BROWSERS_PATH="$(pwd)/data/playwright-browsers"
 fi
 echo "   Browsers path: $PLAYWRIGHT_BROWSERS_PATH"
 
