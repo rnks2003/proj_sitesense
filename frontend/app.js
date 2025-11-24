@@ -585,6 +585,13 @@ async function pollScanStatus(scanId) {
             const scanData = await response.json();
             statusText.textContent = `Status: ${scanData.status}...`;
 
+            // Update sidebar status immediately
+            const sidebarStatus = document.querySelector(`.scan-item[data-scan-id="${scanId}"] .scan-status`);
+            if (sidebarStatus) {
+                sidebarStatus.textContent = scanData.status;
+                sidebarStatus.className = `scan-status ${scanData.status}`;
+            }
+
             if (scanData.status === 'completed') {
                 await loadScanHistory(); // Refresh history
                 displayResults(scanData);
